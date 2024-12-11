@@ -278,8 +278,8 @@ static int pxa_pwm_resume_noirq(struct device *dev)
 #endif
 
 static const struct dev_pm_ops pxa_pwm_pm_qos = {
-	.suspend_noirq = pxa_pwm_suspend_noirq,
-	.resume_noirq = pxa_pwm_resume_noirq,
+	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(pxa_pwm_suspend_noirq,
+			pxa_pwm_resume_noirq)
 };
 
 static struct platform_driver pwm_driver = {
@@ -298,6 +298,6 @@ static int k1x_pwm_driver_init(void)
 {
 	return platform_driver_register(&pwm_driver);
 }
-late_initcall_sync(k1x_pwm_driver_init);
+late_initcall(k1x_pwm_driver_init);
 
 MODULE_LICENSE("GPL v2");
