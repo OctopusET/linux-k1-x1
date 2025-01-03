@@ -562,7 +562,7 @@ static int ccic_clk_set_rate(struct ccic_ctrl *ctrl_dev, int mode)
 	return 0;
 }
 
-int ccic_clk_enable(struct ccic_ctrl *ctrl, int en)
+static int ccic_clk_enable(struct ccic_ctrl *ctrl, int en)
 {
 	int ret = 0;
 	struct ccic_dev *ccic_dev = ctrl->ccic_dev;
@@ -612,7 +612,7 @@ int ccic_clk_enable(struct ccic_ctrl *ctrl, int en)
 	return ret;
 }
 
-int ccic_config_csi2_mbus(struct ccic_ctrl *ctrl, int md, u8 vc0, u8 vc1, u8 dt0, u8 dt1,
+static int ccic_config_csi2_mbus(struct ccic_ctrl *ctrl, int md, u8 vc0, u8 vc1, u8 dt0, u8 dt1,
 			  int lanes)
 {
 	int ret;
@@ -639,7 +639,7 @@ int ccic_config_csi2_mbus(struct ccic_ctrl *ctrl, int md, u8 vc0, u8 vc1, u8 dt0
 	return ret;
 }
 
-int ccic_config_csi2idi_mux(struct ccic_ctrl *ctrl, int chnl, int idi, int en)
+static int ccic_config_csi2idi_mux(struct ccic_ctrl *ctrl, int chnl, int idi, int en)
 {
 	struct ccic_dev *csi2idi = NULL;
 	struct ccic_dev *tmp;
@@ -687,7 +687,7 @@ int ccic_config_csi2idi_mux(struct ccic_ctrl *ctrl, int chnl, int idi, int en)
 	return 0;
 }
 
-int ccic_reset_csi2idi(struct ccic_ctrl *ctrl, int idi, int rst)
+static int ccic_reset_csi2idi(struct ccic_ctrl *ctrl, int idi, int rst)
 {
 	struct ccic_dev *csi2idi = NULL;
 	struct ccic_dev *tmp;
@@ -858,14 +858,6 @@ int ccic_ctrl_get(struct ccic_ctrl **ctrl_host, int id,
 
 EXPORT_SYMBOL(ccic_ctrl_get);
 
-void ccic_ctrl_put(struct ccic_ctrl *ctrl)
-{
-	// TODO
-}
-
-EXPORT_SYMBOL(ccic_ctrl_put);
-
-
 int ccic_dma_get(struct ccic_dma **ccic_dma, int id)
 {
 	struct ccic_dev *ccic_dev = NULL;
@@ -945,7 +937,8 @@ static void ccic_dma_bh_handler(struct ccic_dma_work_struct *ccic_dma_work)
 	LIST_HEAD(export_list);
 	unsigned long flags = 0;
 
-	spin_lock(&ac_vnode->waitq_head.lock);
+	//spin_lock(&ac_vnode->waitq_head.lock);
+	spin_lock_irqsave(&ac_vnode->waitq_head.lock, flags);
 	ac_vnode->in_tasklet = 1;
 	if (ac_vnode->in_streamoff || !ac_vnode->is_streaming) {
 		wake_up_locked(&ac_vnode->waitq_head);
@@ -953,7 +946,9 @@ static void ccic_dma_bh_handler(struct ccic_dma_work_struct *ccic_dma_work)
 		goto dma_tasklet_finish;
 	}
 	wake_up_locked(&ac_vnode->waitq_head);
-	spin_unlock(&ac_vnode->waitq_head.lock);
+//	spin_unlock(&ac_vnode->waitq_head.lock);
+	spin_unlock_irqrestore(&ac_vnode->waitq_head.lock, flags);
+
 	spin_lock_irqsave(&ac_vnode->slock, flags);
 	list_for_each_entry_safe(pos, n, &ac_vnode->busy_list, list_entry) {
 		if (pos->flags & (AC_BUF_FLAG_HW_ERR | AC_BUF_FLAG_SW_ERR | AC_BUF_FLAG_DONE_TOUCH)) {
@@ -984,10 +979,12 @@ static void ccic_dma_bh_handler(struct ccic_dma_work_struct *ccic_dma_work)
 	}
 dma_tasklet_finish:
 	if (ac_vnode) {
-		spin_lock(&ac_vnode->waitq_head.lock);
+		spin_lock_irqsave(&ac_vnode->waitq_head.lock, flags);
+		//spin_lock(&ac_vnode->waitq_head.lock);
 		ac_vnode->in_tasklet = 0;
 		wake_up_locked(&ac_vnode->waitq_head);
-		spin_unlock(&ac_vnode->waitq_head.lock);
+		//spin_unlock(&ac_vnode->waitq_head.lock);
+		spin_unlock_irqrestore(&ac_vnode->waitq_head.lock, flags);
 	}
 	ccic_put_dma_work(dma_ctx, ccic_dma_work);
 }
@@ -1260,7 +1257,7 @@ static const struct of_device_id k1x_ccic_dt_match[] = {
 
 MODULE_DEVICE_TABLE(of, k1x_ccic_dt_match);
 
-struct platform_driver k1x_ccic_driver = {
+static struct platform_driver k1x_ccic_driver = {
 	.driver = {
 		.name = K1X_CCIC_DRV_NAME,
 		.of_match_table = of_match_ptr(k1x_ccic_dt_match),
@@ -1269,7 +1266,7 @@ struct platform_driver k1x_ccic_driver = {
 	.remove = k1x_ccic_remove,
 };
 
-int __init k1x_ccic_driver_init(void)
+static int __init k1x_ccic_driver_init(void)
 {
 	int ret;
 
@@ -1284,7 +1281,7 @@ int __init k1x_ccic_driver_init(void)
 	return ret;
 }
 
-void __exit k1x_ccic_driver_exit(void)
+static void __exit k1x_ccic_driver_exit(void)
 {
 	platform_driver_unregister(&k1x_ccic_driver);
 	ccic_csiphy_unregister();

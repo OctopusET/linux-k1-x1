@@ -645,7 +645,8 @@
 		pinctrl: pinctrl@d401e000 {
 			compatible = "pinconf-single-aib";
 			reg = <0x0 0xd401e000 0x0 0x250>,
-				<0x0 0xd4019800 0x0 0x10>;
+				<0x0 0xd4019800 0x0 0x10>,
+				<0x0 0xd4019000 0x0 0x800>;
 			#address-cells = <1>;
 			#size-cells = <1>;
 			#pinctrl-cells = <2>;
@@ -2524,6 +2525,14 @@
 			resets = <&reset RESET_AES>;
 			interconnects = <&dram_range5>;
 			interconnect-names = "dma-mem";
+			status = "okay";
+		};
+
+		crng: crng@f0703800 {
+			compatible = "spacemit,hw_crng";
+			reg = <0x0 0xf0703800 0x0 0x100>;
+			clocks = <&ccu CLK_AES>;
+			resets = <&reset RESET_AES>;
 			status = "okay";
 		};
 
